@@ -7,5 +7,6 @@ router.post("/register", AuthController.register);
 router.post("/login", AuthController.login);
 
 // Google OAuth
+router.post("/google", AuthController.googleAuth);
 
 module.exports = router;

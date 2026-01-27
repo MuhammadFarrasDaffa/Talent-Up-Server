@@ -5,9 +5,10 @@ const userSchema = new mongoose.Schema({
   // --- Data Akun Dasar ---
   name: { type: String, required: true },
   email: { type: String, required: true, unique: true },
-  password: { type: String, required: true }, // Nanti di-hash
+  password: { type: String, required: false }, // Optional for Google OAuth users
   role: { type: String, enum: ["user", "admin"], default: "user" },
   token: { type: Number, default: 0 }, // Token penggunaan AI
+  googleId: { type: String, default: null }, // Google OAuth ID
   // --- Data Profil Profesional (Hasil Ekstraksi CV) ---
   // AI akan mengisi bagian ini otomatis nanti
   profile: {

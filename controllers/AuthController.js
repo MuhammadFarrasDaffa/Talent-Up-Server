@@ -2,6 +2,9 @@ const User = require("../models/User");
 
 const { hashPassword, comparePassword } = require("../helpers/bcrypt");
 const { signToken } = require("../helpers/jwt");
+const { OAuth2Client } = require("google-auth-library");
+
+const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 
 class AuthController {
   static async register(req, res, next) {
@@ -74,6 +77,67 @@ class AuthController {
 
       res.status(200).json({
         message: "Login successful",
+        access_token: token,
+        user: {
+          id: user._id,
+          name: user.name,
+          email: user.email,
+          role: user.role,
+          status: user.status,
+        },
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  static async googleAuth(req, res, next) {
+    try {
+      const { credential } = req.body;
+
+      if (!credential) {
+        throw {
+          name: "ValidationError",
+          message: "Google credential is required",
+        };
+      }
+
+      // Verify the Google token
+      const ticket = await googleClient.verifyIdToken({
+        idToken: credential,
+        audience: process.env.GOOGLE_CLIENT_ID,
+      });
+
+      const payload = ticket.getPayload();
+      const { sub: googleId, email, name, picture } = payload;
+
+      // Check if user exists
+      let user = await User.findOne({ email });
+
+      if (user) {
+        // User exists, update googleId if not set
+        if (!user.googleId) {
+          user.googleId = googleId;
+          await user.save();
+        }
+      } else {
+        // Create new user with Google data
+        user = await User.create({
+          name,
+          email,
+          googleId,
+          role: "user",
+          token: 10,
+        });
+      }
+
+      const token = signToken({
+        id: user._id,
+        email: user.email,
+      });
+
+      res.status(200).json({
+        message: "Google authentication successful",
         access_token: token,
         user: {
           id: user._id,

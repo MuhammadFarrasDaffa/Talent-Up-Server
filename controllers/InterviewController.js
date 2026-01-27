@@ -29,13 +29,13 @@ module.exports = class InterviewController {
         console.log("Token Tersisa", 10 - tokenUsage);
 
         // check token user
-        // const userToken = await User.findById(req.user.id).then(user => user.token);
+        const userToken = await User.findById(req.user.id).then(user => user.token);
 
-        // if (userToken < tokenUsage) {
-        //     return res.status(403).json({
-        //         message: "Token tidak cukup, silakan top up token Anda."
-        //     });
-        // }
+        if (userToken < tokenUsage) {
+            return res.status(403).json({
+                message: "Token tidak cukup, silakan top up token Anda."
+            });
+        }
 
         try {
 
@@ -75,9 +75,9 @@ module.exports = class InterviewController {
             }));
 
             // update token user
-            // await User.findByIdAndUpdate(req.user.id, {
-            //     $inc: { token: -tokenUsage }
-            // });
+            await User.findByIdAndUpdate(req.user.id, {
+                $inc: { token: -tokenUsage }
+            });
 
             res.status(201).json(transformedData);
         } catch (error) {

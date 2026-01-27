@@ -7,7 +7,7 @@ const userSchema = new mongoose.Schema({
     email: { type: String, required: true, unique: true },
     password: { type: String, required: true }, // Nanti di-hash
     role: { type: String, enum: ["user", "admin"], default: "user" },
-
+    token: { type: Number, default: 0 }, // Token penggunaan AI
     // --- Data Profil Profesional (Hasil Ekstraksi CV) ---
     // AI akan mengisi bagian ini otomatis nanti
     profile: {

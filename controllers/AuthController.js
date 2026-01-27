@@ -26,6 +26,7 @@ class AuthController {
                 email,
                 password: hashedPassword,
                 role: "user",
+                token: 10,
             });
 
 

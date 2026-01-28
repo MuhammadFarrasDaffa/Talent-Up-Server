@@ -58,31 +58,35 @@ const analyzeMatch = async (jobData, userProfile) => {
     `;
 
     const prompt = `
-      Act as an Expert ATS (Applicant Tracking System) and HR Manager.
+      Kamu adalah seorang HR Manager dan Pakar ATS (Applicant Tracking System) profesional.
       
-      Your Task:
-      Analyze the compatibility between the CANDIDATE CV and the JOB DETAILS provided below.
+      TUGAS:
+      Analisis kecocokan antara CV KANDIDAT dengan LOWONGAN PEKERJAAN di bawah ini.
+      Gunakan Bahasa Indonesia yang profesional namun tetap mudah dipahami.
       
       ---
-      JOB DETAILS:
+      DETAIL LOWONGAN:
       ${jobContext}
       
       ---
-      CANDIDATE CV CONTENT:
+      PROFIL KANDIDAT:
       ${userContext}
       
       ---
-      INSTRUCTIONS:
-      1. Analyze match based on skills, experience, and requirements.
-      2. Provide a score from 0 to 100.
-      3. List exactly 3-5 key matching points (Why they fit).
-      4. List exactly 3-5 missing points or areas for improvement (Why they don't fit).
-      5. Output MUST be a raw JSON object with this exact structure:
+      INSTRUKSI:
+      1. Analisis kecocokan berdasarkan skill, pengalaman, dan persyaratan.
+      2. Berikan skor kecocokan dari 0-100.
+      3. Tulis ringkasan analisis dalam 2-3 kalimat yang menjelaskan mengapa kandidat cocok/tidak cocok.
+      4. Sebutkan 3-5 poin kelebihan kandidat (mengapa cocok untuk posisi ini).
+      5. Sebutkan 3-5 poin yang perlu ditingkatkan (area improvement atau skill yang kurang).
+      6. Gunakan kalimat yang singkat, padat, dan actionable untuk setiap poin.
+      
+      OUTPUT harus berupa JSON object dengan struktur berikut:
       {
         "matchScore": number,
-        "matchExplanation": "Short summary string",
-        "matchingPoints": ["string", "string"],
-        "missingPoints": ["string", "string"]
+        "matchExplanation": "Ringkasan analisis dalam Bahasa Indonesia (2-3 kalimat)",
+        "matchingPoints": ["Poin kelebihan 1", "Poin kelebihan 2", ...],
+        "missingPoints": ["Area improvement 1", "Area improvement 2", ...]
       }
     `;
 

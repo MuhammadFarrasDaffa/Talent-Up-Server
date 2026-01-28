@@ -98,8 +98,14 @@ class JobController {
         });
       }
 
-      // 1. Ambil Data Job
-      const job = await Job.findOne({ externalId: id });
+      // 1. Ambil Data Job - coba cari dengan _id dulu, kalau gagal coba externalId
+      let job = await Job.findById(id).catch(() => null);
+
+      // Fallback ke externalId jika _id tidak ditemukan
+      if (!job) {
+        job = await Job.findOne({ externalId: id });
+      }
+
       if (!job) {
         return res
           .status(404)

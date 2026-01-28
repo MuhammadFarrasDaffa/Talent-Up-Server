@@ -8,10 +8,10 @@ class PaymentController {
      */
     static async getPackages(req, res, next) {
         try {
-            const packages = midtransService.getAllPackages();
+            const packages = await midtransService.getAllPackages();
             res.status(200).json({
                 success: true,
-                data: packages,
+                packages: packages,
             });
         } catch (error) {
             next(error);
@@ -27,7 +27,7 @@ class PaymentController {
             const userId = req.user.id;
 
             // Validate package type
-            const packageData = midtransService.getPackage(packageType);
+            const packageData = await midtransService.getPackage(packageType);
             if (!packageData) {
                 return res.status(400).json({
                     success: false,
@@ -95,6 +95,10 @@ class PaymentController {
     static async handleNotification(req, res, next) {
         try {
             const notification = req.body;
+            console.log("📥 Received Midtrans notification:", notification);
+
+            console.log("INI ISI NOTIFIKASI", { notification });
+
 
             // Verify notification with Midtrans
             const statusResponse = await midtransService.verifyNotification(
@@ -103,6 +107,8 @@ class PaymentController {
 
             const { order_id, transaction_status, fraud_status, payment_type } =
                 statusResponse;
+
+            console.log(`💳 Transaction ${order_id} status: ${transaction_status}`);
 
             // Find payment in database
             const payment = await Payment.findOne({ orderId: order_id });
@@ -127,6 +133,8 @@ class PaymentController {
                 }
             }
 
+            console.log(`✅ Updating payment ${order_id} to status: ${paymentStatus}`);
+
             // Update payment status
             payment.status = paymentStatus;
             payment.paymentType = payment_type;
@@ -140,6 +148,7 @@ class PaymentController {
                 if (user) {
                     user.token += payment.tokenAmount;
                     await user.save();
+                    console.log(`🎁 Added ${payment.tokenAmount} tokens to user ${user.email}`);
                 }
             }
 
@@ -222,11 +231,60 @@ class PaymentController {
                 .limit(limit * 1)
                 .skip((page - 1) * limit);
 
+            // Check and update ONLY expired pending payments (older than 5 minutes)
+            const now = new Date();
+            const pendingPayments = payments.filter(p => {
+                if (p.status !== "pending") return false;
+
+                // Calculate time difference in minutes
+                const createdAt = new Date(p.createdAt);
+                const minutesPassed = (now - createdAt) / (1000 * 60);
+
+                // Only check if payment is older than 5 minutes (expiry time)
+                return minutesPassed > 5;
+            });
+
+            for (const payment of pendingPayments) {
+                try {
+                    // Check status from Midtrans
+                    const statusResponse = await midtransService.checkTransactionStatus(
+                        payment.orderId
+                    );
+
+                    const newStatus = midtransService.mapTransactionStatus(
+                        statusResponse.transaction_status
+                    );
+
+                    // Update if status changed
+                    if (payment.status !== newStatus) {
+                        payment.status = newStatus;
+                        payment.midtransResponse = statusResponse;
+                        await payment.save();
+                        console.log(`🔄 Auto-updated payment ${payment.orderId} from pending to ${newStatus}`);
+                    }
+                } catch (error) {
+                    // If error 404 or transaction not found, mark as expired
+                    if (error.message.includes("404") || error.message.includes("not found")) {
+                        payment.status = "expired";
+                        await payment.save();
+                        console.log(`⏱️ Payment ${payment.orderId} expired (not found in Midtrans)`);
+                    } else {
+                        console.error(`Error checking status for ${payment.orderId}:`, error.message);
+                    }
+                }
+            }
+
+            // Fetch updated payments
+            const updatedPayments = await Payment.find({ userId })
+                .sort({ createdAt: -1 })
+                .limit(limit * 1)
+                .skip((page - 1) * limit);
+
             const count = await Payment.countDocuments({ userId });
 
             res.status(200).json({
                 success: true,
-                data: payments,
+                data: updatedPayments,
                 totalPages: Math.ceil(count / limit),
                 currentPage: page,
             });

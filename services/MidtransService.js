@@ -69,6 +69,10 @@ class MidtransService {
                 error: `${process.env.CLIENT_URL}/payment/error`,
                 pending: `${process.env.CLIENT_URL}/payment/pending`,
             },
+            expiry: {
+                unit: "minutes",
+                duration: 5
+            }
         };
 
         try {

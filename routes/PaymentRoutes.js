@@ -9,11 +9,10 @@ router.get("/packages", PaymentController.getPackages);
 router.post("/notification", PaymentController.handleNotification); // Webhook from Midtrans
 
 // Protected routes (require authentication)
-router.use(Authentication);
 
-router.post("/create", PaymentController.createPayment);
-router.get("/status/:orderId", PaymentController.checkStatus);
-router.get("/history", PaymentController.getPaymentHistory);
-router.get("/balance", PaymentController.getTokenBalance);
+router.post("/create", Authentication, PaymentController.createPayment);
+router.get("/status/:orderId", Authentication, PaymentController.checkStatus);
+router.get("/history", Authentication, PaymentController.getPaymentHistory);
+router.get("/balance", Authentication, PaymentController.getTokenBalance);
 
 module.exports = router;

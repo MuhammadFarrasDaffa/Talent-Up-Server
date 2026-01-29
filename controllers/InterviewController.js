@@ -447,15 +447,19 @@ module.exports = class InterviewController {
             Rules:
             - Buat pertanyaan follow-up yang menggali lebih dalam dari jawaban kandidat.
             - Pertanyaan harus spesifik dan relevan dengan jawaban yang diberikan.
-            - Gunakan bahasa yang formal dan sopan.
+            - Jika jawaban kurang detail atau tidak sesuai konteks, buat pertanyaan yang mengarahkan kandidat untuk memberikan informasi lebih konkret.
+            - Gunakan bahasa yang formal dan sopan namun tegas.
             - Panjang pertanyaan maksimal 2 kalimat.
             - Do not return anything except raw text.
             - The response should be in Indonesian.
             - Tidak perlu pakai kata Bapak/Ibu atau Saudara/i di awal kalimat.
             - Jangan berikan response atau acknowledgment, langsung tanyakan pertanyaan follow-up.
 
-            Example Output:
+            Example Output (Good Answer):
             "Bisa Anda jelaskan lebih detail tentang tantangan teknis yang Anda hadapi dalam proyek tersebut? Bagaimana Anda mengatasinya?"
+
+            Example Output (Vague Answer):
+            "Sepertinya jawaban Anda masih cukup umum. Bisakah Anda berikan contoh konkret dari pengalaman kerja Anda yang relevan dengan posisi ini?"
 
             Output format: 
             "Your follow-up question here."
@@ -463,22 +467,30 @@ module.exports = class InterviewController {
       } else {
         // Generate acknowledgment/response biasa
         prompt = `
-            Task: Anggap dirimu adalah seorang HRD Profesional, berikan response sebanyak 1-2 kalimat terhadap jawaban interview berikut ini berdasarkan pertanyaan yang diajukan.
+            Task: Anggap dirimu adalah seorang HRD Profesional yang objektif dan kritis. Berikan response sebanyak 1-2 kalimat terhadap jawaban interview berikut ini berdasarkan pertanyaan yang diajukan.
             
             Question: ${question}
             Answer: ${answer}
 
             Rules:
-            - Berikan response seperti seorang HRD Profesional.
-            - Gunakan bahasa yang formal dan sopan.
+            - Evaluasi kualitas jawaban kandidat secara objektif.
+            - Jika jawaban baik, konkret, dan relevan: berikan apresiasi yang profesional.
+            - Jika jawaban kurang detail, terlalu umum, atau tidak menjawab pertanyaan: berikan feedback yang konstruktif namun tegas.
+            - Jika jawaban tidak relevan atau menghindari pertanyaan: tunjukkan dengan profesional bahwa jawaban kurang sesuai ekspektasi.
+            - Gunakan bahasa yang formal, sopan, namun tegas dan objektif.
             - Panjang response maksimal 2 kalimat.
-            - Response berisi pengulangan poin penting dari jawaban.
             - Do not return anything except raw text.
             - The response should be in Indonesian.
-            - Tidak perlu pakai ada kata Bapak/Ibu atau Saudara/i di awal kalimat.
+            - Tidak perlu pakai kata Bapak/Ibu atau Saudara/i di awal kalimat.
 
-            Example Output:
-            "Terima kasih atas penjelasan Anda yang sangat mendetail mengenai pengalaman Anda dalam mengelola proyek pengembangan perangkat lunak. Kami menghargai pendekatan sistematis Anda dalam menyelesaikan tantangan teknis."
+            Example Output (Good Answer):
+            "Terima kasih atas penjelasan yang detail mengenai pengalaman Anda dalam mengelola proyek pengembangan perangkat lunak. Pendekatan sistematis Anda dalam menyelesaikan tantangan teknis menunjukkan kemampuan problem-solving yang baik."
+
+            Example Output (Mediocre Answer):
+            "Saya mencatat jawaban Anda, namun penjelasannya masih cukup umum. Akan lebih baik jika Anda bisa memberikan contoh spesifik dari pengalaman kerja Anda."
+
+            Example Output (Poor/Irrelevant Answer):
+            "Sepertinya jawaban Anda belum sepenuhnya menjawab pertanyaan yang diajukan. Mari kita lanjutkan ke pertanyaan berikutnya."
 
             Output format: 
             "Your response text here."

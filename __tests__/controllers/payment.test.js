@@ -540,5 +540,61 @@ describe("Payment Controller", () => {
       expect(response.status).toBe(500);
       findOneSpy.mockRestore();
     });
+
+    it("should handle database error in getPaymentHistory", async () => {
+      const findSpy = jest.spyOn(Payment, "find").mockReturnValueOnce({
+        sort: jest.fn().mockReturnThis(),
+        limit: jest.fn().mockReturnThis(),
+        skip: jest.fn().mockRejectedValueOnce(new Error("Database error")),
+      });
+
+      const response = await request(app)
+        .get("/payment/history")
+        .set("Authorization", `Bearer ${dbTestToken}`);
+
+      expect(response.status).toBe(500);
+      findSpy.mockRestore();
+    });
+
+    it("should handle database error in getTokenBalance", async () => {
+      const findByIdSpy = jest
+        .spyOn(User, "findById")
+        .mockRejectedValueOnce(new Error("Database error"));
+
+      const response = await request(app)
+        .get("/payment/balance")
+        .set("Authorization", `Bearer ${dbTestToken}`);
+
+      expect(response.status).toBe(500);
+      findByIdSpy.mockRestore();
+    });
+
+    it("should handle notification database error", async () => {
+      const findOneSpy = jest
+        .spyOn(Payment, "findOne")
+        .mockRejectedValueOnce(new Error("Database error"));
+
+      const MidtransService = require("../../services/MidtransService");
+      jest
+        .spyOn(MidtransService, "verifySignatureKey")
+        .mockReturnValueOnce(true);
+      jest.spyOn(MidtransService, "verifyNotification").mockResolvedValueOnce({
+        transaction_status: "capture",
+        fraud_status: "accept",
+        payment_type: "credit_card",
+        transaction_id: "txn123",
+      });
+
+      const response = await request(app).post("/payment/notification").send({
+        order_id: "ORDER-test",
+        status_code: "200",
+        gross_amount: "10000",
+        signature_key: "valid_key",
+        transaction_status: "capture",
+      });
+
+      expect(response.status).toBe(500);
+      findOneSpy.mockRestore();
+    });
   });
 });

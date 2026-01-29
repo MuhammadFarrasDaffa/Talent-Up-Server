@@ -746,5 +746,93 @@ describe("Interview Controller", () => {
       expect(response.status).toBe(500);
       findSpy.mockRestore();
     });
+
+    it("should handle database error in getInterviewHistory", async () => {
+      const findSpy = jest.spyOn(Interview, "find").mockReturnValueOnce({
+        sort: jest.fn().mockReturnThis(),
+        select: jest.fn().mockRejectedValueOnce(new Error("Database error")),
+      });
+
+      const response = await request(app)
+        .get("/interviews/history")
+        .set("Authorization", `Bearer ${authToken}`);
+
+      expect(response.status).toBe(500);
+      findSpy.mockRestore();
+    });
+
+    it("should handle database error in saveInterview", async () => {
+      const createSpy = jest
+        .spyOn(Interview, "create")
+        .mockRejectedValueOnce(new Error("Database error"));
+
+      const response = await request(app)
+        .post("/interviews/save")
+        .set("Authorization", `Bearer ${authToken}`)
+        .send({
+          categoryId: testCategory._id.toString(),
+          category: "Frontend Developer",
+          level: "junior",
+          tier: "Basic",
+          questions: [{ _id: "q1", content: "Test", type: "intro" }],
+          answers: [{ questionId: "q1", transcription: "Answer" }],
+        });
+
+      expect(response.status).toBe(500);
+      createSpy.mockRestore();
+    });
+  });
+
+  describe("Transcription and Audio", () => {
+    const InterviewController = require("../../controllers/InterviewController");
+
+    it("should handle transcribeAudio with valid response", async () => {
+      // Mock fetch for transcription
+      const mockFetch = jest.spyOn(global, "fetch").mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({ text: "Transcribed text" }),
+      });
+
+      const result = await InterviewController.transcribeAudio({
+        buffer: Buffer.from("test audio"),
+        mimetype: "audio/webm",
+        originalname: "test.webm",
+      });
+
+      expect(result).toBe("Transcribed text");
+      mockFetch.mockRestore();
+    });
+
+    it("should handle transcribeAudio with error response", async () => {
+      const mockFetch = jest.spyOn(global, "fetch").mockResolvedValueOnce({
+        ok: false,
+        json: async () => ({ message: "API Error" }),
+      });
+
+      await expect(
+        InterviewController.transcribeAudio({
+          buffer: Buffer.from("test audio"),
+          mimetype: "audio/webm",
+          originalname: "test.webm",
+        }),
+      ).rejects.toThrow("API Error");
+      mockFetch.mockRestore();
+    });
+
+    it("should handle transcribeAudio with no error message", async () => {
+      const mockFetch = jest.spyOn(global, "fetch").mockResolvedValueOnce({
+        ok: false,
+        json: async () => ({}),
+      });
+
+      await expect(
+        InterviewController.transcribeAudio({
+          buffer: Buffer.from("test audio"),
+          mimetype: "audio/webm",
+          originalname: "test.webm",
+        }),
+      ).rejects.toThrow("Gagal melakukan transkripsi");
+      mockFetch.mockRestore();
+    });
   });
 });

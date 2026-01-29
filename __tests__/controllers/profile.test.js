@@ -546,5 +546,165 @@ describe("Profile Controller", () => {
       expect(response.status).toBe(500);
       saveSpy.mockRestore();
     });
+
+    it("should handle database error in getProfile", async () => {
+      const findByIdSpy = jest
+        .spyOn(User, "findById")
+        .mockRejectedValueOnce(new Error("Database error"));
+
+      const response = await request(app)
+        .get("/profile")
+        .set("Authorization", `Bearer ${dbTestToken}`);
+
+      expect(response.status).toBe(500);
+      findByIdSpy.mockRestore();
+    });
+
+    it("should handle database error in createOrUpdateProfile", async () => {
+      const findByIdSpy = jest
+        .spyOn(User, "findById")
+        .mockRejectedValueOnce(new Error("Database error"));
+
+      const response = await request(app)
+        .post("/profile")
+        .set("Authorization", `Bearer ${dbTestToken}`)
+        .send({ fullName: "New Name" });
+
+      expect(response.status).toBe(500);
+      findByIdSpy.mockRestore();
+    });
+
+    it("should handle database error in addEducation", async () => {
+      const saveSpy = jest
+        .spyOn(User.prototype, "save")
+        .mockRejectedValueOnce(new Error("Database error"));
+
+      const response = await request(app)
+        .post("/profile/education")
+        .set("Authorization", `Bearer ${dbTestToken}`)
+        .send({
+          institution: "University",
+          degree: "Bachelor",
+        });
+
+      expect(response.status).toBe(500);
+      saveSpy.mockRestore();
+    });
+
+    it("should handle database error in updateExperience", async () => {
+      // First add an experience
+      dbTestUser.profile.experience.push({
+        company: "Test",
+        position: "Dev",
+        startDate: new Date(),
+      });
+      await dbTestUser.save();
+      const expId = dbTestUser.profile.experience[0]._id;
+
+      const saveSpy = jest
+        .spyOn(User.prototype, "save")
+        .mockRejectedValueOnce(new Error("Database error"));
+
+      const response = await request(app)
+        .put(`/profile/experience/${expId}`)
+        .set("Authorization", `Bearer ${dbTestToken}`)
+        .send({ company: "Updated" });
+
+      expect(response.status).toBe(500);
+      saveSpy.mockRestore();
+    });
+
+    it("should handle database error in deleteExperience", async () => {
+      dbTestUser.profile.experience.push({
+        company: "To Delete",
+        position: "Dev",
+        startDate: new Date(),
+      });
+      await dbTestUser.save();
+      const expId = dbTestUser.profile.experience[0]._id;
+
+      const saveSpy = jest
+        .spyOn(User.prototype, "save")
+        .mockRejectedValueOnce(new Error("Database error"));
+
+      const response = await request(app)
+        .delete(`/profile/experience/${expId}`)
+        .set("Authorization", `Bearer ${dbTestToken}`);
+
+      expect(response.status).toBe(500);
+      saveSpy.mockRestore();
+    });
+
+    it("should handle database error in updateEducation", async () => {
+      dbTestUser.profile.education.push({
+        institution: "Test",
+        degree: "Bachelor",
+      });
+      await dbTestUser.save();
+      const eduId = dbTestUser.profile.education[0]._id;
+
+      const saveSpy = jest
+        .spyOn(User.prototype, "save")
+        .mockRejectedValueOnce(new Error("Database error"));
+
+      const response = await request(app)
+        .put(`/profile/education/${eduId}`)
+        .set("Authorization", `Bearer ${dbTestToken}`)
+        .send({ institution: "Updated" });
+
+      expect(response.status).toBe(500);
+      saveSpy.mockRestore();
+    });
+
+    it("should handle database error in deleteEducation", async () => {
+      dbTestUser.profile.education.push({
+        institution: "To Delete",
+        degree: "Bachelor",
+      });
+      await dbTestUser.save();
+      const eduId = dbTestUser.profile.education[0]._id;
+
+      const saveSpy = jest
+        .spyOn(User.prototype, "save")
+        .mockRejectedValueOnce(new Error("Database error"));
+
+      const response = await request(app)
+        .delete(`/profile/education/${eduId}`)
+        .set("Authorization", `Bearer ${dbTestToken}`);
+
+      expect(response.status).toBe(500);
+      saveSpy.mockRestore();
+    });
+
+    it("should handle database error in addSkill", async () => {
+      const saveSpy = jest
+        .spyOn(User.prototype, "save")
+        .mockRejectedValueOnce(new Error("Database error"));
+
+      const response = await request(app)
+        .post("/profile/skills")
+        .set("Authorization", `Bearer ${dbTestToken}`)
+        .send({ name: "JavaScript" });
+
+      expect(response.status).toBe(500);
+      saveSpy.mockRestore();
+    });
+
+    it("should handle database error in deleteSkill", async () => {
+      dbTestUser.profile.skills.push({ name: "ToDelete" });
+      await dbTestUser.save();
+      const skillId = dbTestUser.profile.skills[0]._id;
+
+      const saveSpy = jest
+        .spyOn(User.prototype, "save")
+        .mockRejectedValueOnce(new Error("Database error"));
+
+      const response = await request(app)
+        .delete(`/profile/skills/${skillId}`)
+        .set("Authorization", `Bearer ${dbTestToken}`);
+
+      expect(response.status).toBe(500);
+      saveSpy.mockRestore();
+    });
   });
 });

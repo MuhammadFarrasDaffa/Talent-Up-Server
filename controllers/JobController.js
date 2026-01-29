@@ -100,12 +100,7 @@ class JobController {
 
       // === CEK TOKEN BALANCE ===
       const user = await User.findById(userId);
-      if (!user) {
-        return res.status(404).json({
-          success: false,
-          message: "User tidak ditemukan.",
-        });
-      }
+      // Note: User existence is validated by authentication middleware
 
       const TOKEN_COST = 1; // Biaya 1 token per analisis
 

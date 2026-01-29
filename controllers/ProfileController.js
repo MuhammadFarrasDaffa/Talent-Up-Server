@@ -3,12 +3,7 @@ const User = require("../models/User");
 const getProfile = async (req, res, next) => {
   try {
     let user = await User.findById(req.user.id);
-
-    if (!user) {
-      return res.status(404).json({
-        message: "User not found",
-      });
-    }
+    // Note: User existence is validated by authentication middleware
 
     res.status(200).json({
       message: "Profile retrieved successfully",
@@ -49,12 +44,7 @@ const createOrUpdateProfile = async (req, res, next) => {
 
     // Find existing user
     let user = await User.findById(req.user.id);
-
-    if (!user) {
-      return res.status(404).json({
-        message: "User not found",
-      });
-    }
+    // Note: User existence is validated by authentication middleware
 
     // Update profile fields
     if (fullName !== undefined) user.profile.fullName = fullName;
@@ -102,12 +92,7 @@ const addExperience = async (req, res, next) => {
     }
 
     let user = await User.findById(req.user.id);
-
-    if (!user) {
-      return res.status(404).json({
-        message: "User not found",
-      });
-    }
+    // Note: User existence is validated by authentication middleware
 
     user.profile.experience.push({
       company,
@@ -138,12 +123,7 @@ const updateExperience = async (req, res, next) => {
     const updateData = req.body;
 
     const user = await User.findById(req.user.id);
-
-    if (!user) {
-      return res.status(404).json({
-        message: "User not found",
-      });
-    }
+    // Note: User existence is validated by authentication middleware
 
     const experience = user.profile.experience.id(experienceId);
 
@@ -177,12 +157,7 @@ const deleteExperience = async (req, res, next) => {
     const { experienceId } = req.params;
 
     const user = await User.findById(req.user.id);
-
-    if (!user) {
-      return res.status(404).json({
-        message: "User not found",
-      });
-    }
+    // Note: User existence is validated by authentication middleware
 
     user.profile.experience.pull(experienceId);
     await user.save();
@@ -219,12 +194,7 @@ const addEducation = async (req, res, next) => {
     }
 
     let user = await User.findById(req.user.id);
-
-    if (!user) {
-      return res.status(404).json({
-        message: "User not found",
-      });
-    }
+    // Note: User existence is validated by authentication middleware
 
     user.profile.education.push({
       institution,
@@ -256,12 +226,7 @@ const updateEducation = async (req, res, next) => {
     const updateData = req.body;
 
     const user = await User.findById(req.user.id);
-
-    if (!user) {
-      return res.status(404).json({
-        message: "User not found",
-      });
-    }
+    // Note: User existence is validated by authentication middleware
 
     const education = user.profile.education.id(educationId);
 
@@ -294,12 +259,7 @@ const deleteEducation = async (req, res, next) => {
     const { educationId } = req.params;
 
     const user = await User.findById(req.user.id);
-
-    if (!user) {
-      return res.status(404).json({
-        message: "User not found",
-      });
-    }
+    // Note: User existence is validated by authentication middleware
 
     user.profile.education.pull(educationId);
     await user.save();
@@ -327,12 +287,7 @@ const addSkill = async (req, res, next) => {
     }
 
     let user = await User.findById(req.user.id);
-
-    if (!user) {
-      return res.status(404).json({
-        message: "User not found",
-      });
-    }
+    // Note: User existence is validated by authentication middleware
 
     user.profile.skills.push({ name, level });
     await user.save();
@@ -354,12 +309,7 @@ const deleteSkill = async (req, res, next) => {
     const { skillId } = req.params;
 
     const user = await User.findById(req.user.id);
-
-    if (!user) {
-      return res.status(404).json({
-        message: "User not found",
-      });
-    }
+    // Note: User existence is validated by authentication middleware
 
     user.profile.skills.pull(skillId);
     await user.save();

@@ -710,17 +710,41 @@ module.exports = class InterviewController {
 
           const data = response.text.trim();
 
-          // ELEVENLABS COST SIMULATION - Count characters and calculate cost but don't generate audio
-          const characterCount = data.length;
-          const elevenLabsCostSimulation = CostCalculator.calculateElevenLabsCost(characterCount);
+          // ELEVENLABS AUDIO GENERATION - Generate actual audio
+          let audioBase64 = "";
+          let actualElevenLabsCost = 0;
+          let actualCharacterCount = 0;
 
-          // Track simulated ElevenLabs costs
-          aiServiceCosts.elevenLabs = {
-            characters: characterCount,
-            cost: elevenLabsCostSimulation
-          };
+          try {
+            const voiceResult = await InterviewController.generateVoiceForResponse(data, true);
+            audioBase64 = voiceResult.audioBase64;
+            actualCharacterCount = voiceResult.costMetrics.characters;
+            actualElevenLabsCost = voiceResult.costMetrics.cost;
 
-          console.log(`[ELEVENLABS SIMULATION] Characters: ${characterCount}, Simulated cost: $${elevenLabsCostSimulation.toFixed(6)} (AUDIO NOT GENERATED)`);
+            // Track actual ElevenLabs costs
+            aiServiceCosts.elevenLabs = {
+              characters: actualCharacterCount,
+              cost: actualElevenLabsCost
+            };
+
+            console.log(`[ELEVENLABS ACTIVE] Characters: ${actualCharacterCount}, Actual cost: $${actualElevenLabsCost.toFixed(6)} (AUDIO GENERATED)`);
+          } catch (audioError) {
+            console.error(`[ELEVENLABS ERROR] Failed to generate audio: ${audioError.message}`);
+
+            // Fallback to simulation if audio generation fails
+            const characterCount = data.length;
+            const elevenLabsCostSimulation = CostCalculator.calculateElevenLabsCost(characterCount);
+
+            aiServiceCosts.elevenLabs = {
+              characters: characterCount,
+              cost: elevenLabsCostSimulation
+            };
+
+            actualCharacterCount = characterCount;
+            actualElevenLabsCost = elevenLabsCostSimulation;
+
+            console.log(`[ELEVENLABS FALLBACK] Characters: ${characterCount}, Simulated cost: $${elevenLabsCostSimulation.toFixed(6)} (AUDIO FAILED)`);
+          }
 
           const tokenDetail = {
             functionName: "responseToAnswer",
@@ -729,9 +753,9 @@ module.exports = class InterviewController {
             thoughtsTokens: response.usageMetadata.thoughtsTokenCount || 0,
             totalTokens: response.usageMetadata.totalTokenCount || 0,
             model: "gemini-2.0-flash",
-            // ElevenLabs simulation - cost tracking without API call
-            elevenLabsCharacters: aiServiceCosts.elevenLabs?.characters || 0,
-            elevenLabsCost: aiServiceCosts.elevenLabs?.cost || 0,
+            // ElevenLabs actual usage
+            elevenLabsCharacters: actualCharacterCount,
+            elevenLabsCost: actualElevenLabsCost,
             whisperDurationSeconds: 0, // Will be tracked separately in answerQuestion
             whisperCost: 0,
             timestamp: new Date(),
@@ -745,41 +769,57 @@ module.exports = class InterviewController {
           tokenUsageBuffer.get(userIdStr).push(tokenDetail);
 
           console.log(
-            `[AI COST TRACKING] responseToAnswer (MEMORY BUFFERED) - User: ${userIdStr}, Tokens: ${tokenDetail.totalTokens}, ElevenLabs: $${tokenDetail.elevenLabsCost.toFixed(6)} (SIMULATED), Buffer size: ${tokenUsageBuffer.get(userIdStr).length}`
+            `[AI COST TRACKING] responseToAnswer (MEMORY BUFFERED) - User: ${userIdStr}, Tokens: ${tokenDetail.totalTokens}, ElevenLabs: $${tokenDetail.elevenLabsCost.toFixed(6)} (ACTUAL), Buffer size: ${tokenUsageBuffer.get(userIdStr).length}`
           );
 
-          // Kirim response balik tanpa audio (ElevenLabs simulation only)
+          // Kirim response beserta audio
           res.status(201).json({
             text: data,
-            audioBase64: "", // Empty audio since ElevenLabs API is not called
+            audioBase64: audioBase64,
             contentType: "audio/mp3",
             isFollowUp: needFollowUp || false,
-            audioDisabled: true, // Flag to indicate audio is disabled
-            elevenLabsSimulation: { // Include simulation data
-              characters: characterCount,
-              cost: elevenLabsCostSimulation
+            audioEnabled: true, // Flag to indicate audio is enabled
+            elevenLabsUsage: { // Include actual usage data
+              characters: actualCharacterCount,
+              cost: actualElevenLabsCost
             }
           });
         }
       } else {
         console.warn('[WARNING] No usageMetadata found in response for responseToAnswer');
 
-        // ELEVENLABS COST SIMULATION - Even without token metadata
+        // ELEVENLABS AUDIO GENERATION - Even without token metadata
         const data = response.text.trim();
-        const characterCount = data.length;
-        const elevenLabsCostSimulation = CostCalculator.calculateElevenLabsCost(characterCount);
+        let audioBase64 = "";
+        let actualElevenLabsCost = 0;
+        let actualCharacterCount = 0;
 
-        console.log(`[ELEVENLABS SIMULATION] Characters: ${characterCount}, Simulated cost: $${elevenLabsCostSimulation.toFixed(6)} (AUDIO NOT GENERATED)`);
+        try {
+          const voiceResult = await InterviewController.generateVoiceForResponse(data, true);
+          audioBase64 = voiceResult.audioBase64;
+          actualCharacterCount = voiceResult.costMetrics.characters;
+          actualElevenLabsCost = voiceResult.costMetrics.cost;
+
+          console.log(`[ELEVENLABS ACTIVE] Characters: ${actualCharacterCount}, Actual cost: $${actualElevenLabsCost.toFixed(6)} (AUDIO GENERATED)`);
+        } catch (audioError) {
+          console.error(`[ELEVENLABS ERROR] Failed to generate audio: ${audioError.message}`);
+
+          // Fallback to simulation if audio generation fails
+          actualCharacterCount = data.length;
+          actualElevenLabsCost = CostCalculator.calculateElevenLabsCost(actualCharacterCount);
+
+          console.log(`[ELEVENLABS FALLBACK] Characters: ${actualCharacterCount}, Simulated cost: $${actualElevenLabsCost.toFixed(6)} (AUDIO FAILED)`);
+        }
 
         res.status(201).json({
           text: data,
-          audioBase64: "", // Empty audio since ElevenLabs API is not called
+          audioBase64: audioBase64,
           contentType: "audio/mp3",
           isFollowUp: needFollowUp || false,
-          audioDisabled: true, // Flag to indicate audio is disabled
-          elevenLabsSimulation: { // Include simulation data
-            characters: characterCount,
-            cost: elevenLabsCostSimulation
+          audioEnabled: audioBase64 !== "", // Flag to indicate audio is enabled
+          elevenLabsUsage: { // Include actual usage data
+            characters: actualCharacterCount,
+            cost: actualElevenLabsCost
           }
         });
       }
@@ -1238,6 +1278,30 @@ module.exports = class InterviewController {
         cost: whisperCost
       } : null
     };
+  }
+
+  static async generateVoiceForResponse(text, trackCosts = false) {
+    if (!process.env.ELEVENLABS_API_KEY) {
+      throw new Error("ElevenLabs API key is not configured.");
+    }
+
+    try {
+      // Generate speech using existing generateSpeechBuffer method
+      const speechResult = await InterviewController.generateSpeechBuffer(text, trackCosts);
+      const audioBuffer = speechResult.audioBuffer;
+
+      // Convert buffer to base64
+      const audioBase64 = audioBuffer.toString('base64');
+
+      // Return with cost metrics if tracking enabled
+      return {
+        audioBase64,
+        costMetrics: speechResult.costMetrics
+      };
+
+    } catch (error) {
+      throw new Error(`Failed to generate voice: ${error.message}`);
+    }
   }
 
   static async generateSpeechBuffer(text, trackCosts = false) {

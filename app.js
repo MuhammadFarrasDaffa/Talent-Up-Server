@@ -54,3 +54,4 @@ app.post("/scrape-manual", async (req, res) => {
   scrapeGlints(); // Background process
   res.json({ message: "Scraping dimulai! Cek terminal." });
 });
+

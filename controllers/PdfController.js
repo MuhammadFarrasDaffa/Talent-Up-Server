@@ -9,12 +9,7 @@ const previewCV = async (req, res, next) => {
     const { style } = req.query;
 
     const user = await User.findById(req.user.id);
-
-    if (!user) {
-      return res.status(404).json({
-        message: "User not found. Please create a profile first.",
-      });
-    }
+    // Note: User existence is validated by authentication middleware
 
     const htmlContent = await pdfService.generatePreviewHTML(
       user.profile,
@@ -48,11 +43,7 @@ const generatePDF = async (req, res, next) => {
       profile = customProfile;
     } else {
       const user = await User.findById(req.user.id);
-      if (!user) {
-        return res.status(404).json({
-          message: "User not found. Please create a profile first.",
-        });
-      }
+      // Note: User existence is validated by authentication middleware
       profile = user.profile;
     }
 

@@ -664,7 +664,7 @@ module.exports = class InterviewController {
         // Generate acknowledgment/response biasa
         prompt = `
             Task: Anggap dirimu adalah seorang HRD Profesional yang objektif dan kritis. Berikan response sebanyak 1-2 kalimat terhadap jawaban interview berikut ini berdasarkan pertanyaan yang diajukan.
-
+            
             Question: ${question}
             Answer: ${answer}
 

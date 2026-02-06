@@ -11,12 +11,7 @@ class ResumeController {
           .json({ success: false, message: "No file uploaded" });
       }
 
-      if (req.file.mimetype !== "application/pdf") {
-        return res.status(400).json({
-          success: false,
-          message: "Only PDF files are supported",
-        });
-      }
+      // Note: PDF mimetype validation is handled by multer fileFilter in routes/ResumeRoutes.js
 
       // Ekstrak Teks dari Buffer PDF menggunakan pdf-parse
       // req.file.buffer adalah data file yang disimpan sementara di RAM
@@ -67,13 +62,7 @@ class ResumeController {
       }
 
       const user = await User.findById(req.user.id);
-
-      if (!user) {
-        return res.status(404).json({
-          success: false,
-          message: "User not found",
-        });
-      }
+      // Note: User existence is validated by authentication middleware
 
       // Update user profile dengan data dari CV
       const { profile } = parsedProfile;
